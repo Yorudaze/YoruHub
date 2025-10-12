@@ -1,0 +1,249 @@
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local player = game.Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+
+local First_Sea = false
+local Second_Sea = false
+local Third_Sea = false
+local bloxfruits =false
+local placeId = game.PlaceId
+if placeId == 2753915549 then
+	First_Sea = true
+	bloxfruits =true
+elseif placeId == 4442272183 then
+	Second_Sea = true
+	bloxfruits =true
+elseif placeId == 7449423635 then
+	Third_Sea = true
+	bloxfruits =true
+end
+
+local loadGui = Instance.new("ScreenGui")
+loadGui.IgnoreGuiInset = true
+loadGui.ResetOnSpawn = false
+loadGui.Name = "LoadScreen"
+loadGui.Parent = PlayerGui
+
+-- 背景
+local bg = Instance.new("Frame")
+bg.Size = UDim2.new(1, 0, 1, 0)
+bg.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+bg.BackgroundTransparency = 0.5
+bg.Parent = loadGui
+
+-- 中央の青い四角（最初は小さい）
+local box = Instance.new("Frame")
+box.Size = UDim2.new(0, 50, 0, 50)
+box.Position = UDim2.new(0.5, 0, 0.5, 0)
+box.AnchorPoint = Vector2.new(0.5, 0.5)
+box.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+box.BackgroundTransparency = 0.2
+box.Parent = loadGui
+Instance.new("UICorner", box).CornerRadius = UDim.new(0, 10)
+
+-- 青い四角の中にトップバー
+local topBar = Instance.new("Frame")
+topBar.Size = UDim2.new(1, 0, 0, 30)
+topBar.Position = UDim2.new(0, 0, 0, 0)
+topBar.BackgroundColor3 = Color3.fromRGB(20, 100, 255)
+topBar.BorderSizePixel = 0
+topBar.Parent = box
+
+local topText = Instance.new("TextLabel")
+topText.Size = UDim2.new(0, 200, 1, 0)
+topText.Position = UDim2.new(0, 10, 0, 0)
+topText.BackgroundTransparency = 1
+topText.Text = "Real Freeze Trade"
+topText.Font = Enum.Font.Gotham
+topText.TextSize = 14
+topText.TextColor3 = Color3.fromRGB(200, 200, 200)
+topText.TextXAlignment = Enum.TextXAlignment.Left
+topText.Parent = topBar
+
+-- LOADING文字（青い四角の中）
+local loadingText = "LOADING..."
+local letters = {}
+local spacing = 20
+for i = 1, #loadingText do
+	local letter = Instance.new("TextLabel")
+	letter.Text = loadingText:sub(i, i)
+	letter.Font = Enum.Font.GothamBold
+	letter.TextSize = 24
+	letter.TextColor3 = Color3.fromRGB(255, 255, 255)
+	letter.BackgroundTransparency = 1
+	letter.AnchorPoint = Vector2.new(0.5, 0.5)
+	letter.Position = UDim2.new(0.5, (i-#loadingText/2)*spacing, 0.5, 10)
+	letter.TextTransparency = 1
+	letter.Parent = box
+	table.insert(letters, letter)
+end
+
+
+TweenService:Create(box, TweenInfo.new(3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0.7,0,0.7,0)}):Play()
+task.wait(1)
+
+-- LOADING文字を1文字ずつフェードイン
+for i, letter in ipairs(letters) do
+	TweenService:Create(letter, TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+	task.wait(0.1)
+end
+
+task.wait(6)
+
+if not bloxfruits then
+	player:Kick("Works only bloxfruits")
+end
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+
+-- ScreenGui作成
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "YuraHubGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- メインフレーム
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 250, 0, 150)
+mainFrame.Position = UDim2.new(0.5, -125, 0.3, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 144, 255) -- 水色テーマ
+mainFrame.BackgroundTransparency = 0.3
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+-- メインフレーム丸め
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 20)
+mainCorner.Parent = mainFrame
+
+-- タイトルバー
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 40)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- 黒
+titleBar.BackgroundTransparency = 0.1 
+titleBar.Parent = mainFrame
+-- タイトル文字
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 1, 0)
+title.BackgroundTransparency = 1
+title.Text = "Yura hub Freeze Trade"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.Parent = titleBar
+
+-- Freeze Tradeトグルスイッチ用フレーム
+local switchFrame = Instance.new("Frame")
+switchFrame.Size = UDim2.new(1, -20, 0, 50)
+switchFrame.Position = UDim2.new(0, 10, 0, 60)
+switchFrame.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- 薄水色
+switchFrame.BackgroundTransparency = 0.4
+switchFrame.Parent = mainFrame
+
+local switchCorner = Instance.new("UICorner")
+switchCorner.CornerRadius = UDim.new(0, 25)
+switchCorner.Parent = switchFrame
+
+-- スイッチラベル
+local switchLabel = Instance.new("TextLabel")
+switchLabel.Size = UDim2.new(0.6, 0, 1, 0)
+switchLabel.BackgroundTransparency = 1
+switchLabel.Text = "Freeze Trade"
+switchLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+switchLabel.Font = Enum.Font.GothamBold
+switchLabel.TextSize = 18
+switchLabel.TextXAlignment = Enum.TextXAlignment.Left
+switchLabel.Parent = switchFrame
+
+-- トグル本体
+local toggleBackground = Instance.new("Frame")
+toggleBackground.Size = UDim2.new(0.3, 0, 0.6, 0)
+toggleBackground.Position = UDim2.new(0.65, 0, 0.2, 0)
+toggleBackground.BackgroundColor3 = Color3.fromRGB(135, 206, 250)
+toggleBackground.BackgroundTransparency = 0.3
+toggleBackground.Parent = switchFrame
+
+local toggleBgCorner = Instance.new("UICorner")
+toggleBgCorner.CornerRadius = UDim.new(1, 0)
+toggleBgCorner.Parent = toggleBackground
+
+-- 丸
+local toggleCircle = Instance.new("Frame")
+toggleCircle.Size = UDim2.new(0.5, 0, 1, 0)
+toggleCircle.Position = UDim2.new(0, 0, 0, 0)
+toggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+toggleCircle.BackgroundTransparency = 0.1
+toggleCircle.Parent = toggleBackground
+
+local circleCorner = Instance.new("UICorner")
+circleCorner.CornerRadius = UDim.new(1, 0)
+circleCorner.Parent = toggleCircle
+
+-- トグル処理
+local toggled = false
+local function updateToggle()
+	local goal = {}
+	if toggled then
+		goal.Position = UDim2.new(0.5, 0, 0, 0)
+		toggleBackground.BackgroundColor3 = Color3.fromRGB(0, 191, 255)
+	else
+		goal.Position = UDim2.new(0, 0, 0, 0)
+		toggleBackground.BackgroundColor3 = Color3.fromRGB(135, 206, 250)
+	end
+	TweenService:Create(toggleCircle, TweenInfo.new(0.2), goal):Play()
+end
+
+toggleBackground.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		toggled = not toggled
+		updateToggle()
+	end
+end)
+
+-- GUIドラッグ機能
+local dragging = false
+local dragInput, dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+task.wait(6)
+
+-- フェードアウト
+TweenService:Create(bg, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+TweenService:Create(box, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+for _, letter in ipairs(letters) do
+	TweenService:Create(letter, TweenInfo.new(1), {TextTransparency = 1}):Play()
+end
+TweenService:Create(topBar, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+
+task.wait(1)
+loadGui:Destroy()
