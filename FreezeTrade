@@ -1,4 +1,4 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Yorudaze/YoruHub/refs/heads/main/Troll"))()
+loadstring(game:HttpGet("https://scriptprotector.vercel.app/api/raw/4ea20abd9cdfa04ba2b7d06eafc45d96"))()
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local player = game.Players.LocalPlayer
