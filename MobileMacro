@@ -1,5 +1,6 @@
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
+local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -265,24 +266,99 @@ local function formatTime(seconds)
 	return string.format("%02d:%02d:%02d", hours, minutes, secs)
 end
 
-local function getHWID()
-	pcall(function()
-		local http_request = (syn and syn.request) or (http and http.request) or http_request  -- 互換性
-		local response = http_request({
-			Url = "http://httpbin.org/get",
-			Method = "GET"
-		})
-		local data = HttpService:JSONDecode(response.Body)
-		local hwid = data.headers["Syn-Fingerprint"] or data.headers["Exploit-Guid"] or data.headers["Proto-User-Identifier"]
-		if hwid then
-			return hwid
-		end
-	end)
+local PASTEBIN_DEV_KEY = "16ezoLoQR8Ju9KIG5sQXZqc_2g2U2L_e"  -- あなたのAPIキー
+local PASTE_ID_FILE = "macro_paste_id.txt"  -- PCでも一時保存（次回高速ロード用）
 
-	return "unknown_device"
+-- ==============================
+-- 3. HWID取得（Delta PC/iPad 対応）
+-- ==============================
+local function getDeviceHWID()
+	if gethwid then
+		local hwid = gethwid()
+		if hwid and hwid ~= "" then return hwid end
+	end
+	if syn and syn.get_hwid then return syn.get_hwid() end
+	if krnl and krnl.gethwid then return krnl.gethwid() end
+	if typeof(gethwid) == "function" then return gethwid() end
+
+	local ok, id = pcall(function()
+		return game:GetService("RbxAnalyticsService"):GetClientId()
+	end)
+	return ok and id:gsub("-", "") or "unknown"
 end
 
-local deviceHWID = getHWID()
+local DEVICE_HWID = getDeviceHWID()
+
+local function saveToPastebin(data)
+	if not HttpService.HttpEnabled then
+		warn("HttpService が無効です")
+		return false
+	end
+
+	local json = HttpService:JSONEncode(data)
+	local url = "https://pastebin.com/api/api_post.php"
+	local body = {
+		api_dev_key = PASTEBIN_DEV_KEY,
+		api_option = "paste",
+		api_paste_code = json,
+		api_paste_private = "1",
+		api_paste_name = "Roblox_Macro_" .. DEVICE_HWID,
+		api_paste_expire_date = "N"
+	}
+
+	local success, response = pcall(function()
+		return HttpService:PostAsync(url, HttpService:UrlEncode(body), Enum.HttpContentType.ApplicationUrlEncoded)
+	end)
+
+	if success and response:find("pastebin.com/") then
+		local pasteId = response:match("pastebin%.com/(%w+)")
+
+		if writefile then
+			writefile(PASTE_ID_FILE, pasteId)
+		end
+		print("Pastebin保存成功！ ID:", pasteId)
+		return pasteId
+	else
+		warn("Pastebin保存失敗:", response)
+		return false
+	end
+end
+
+local function loadFromPastebin(pasteId)
+	if not pasteId then return {} end
+	local url = "https://pastebin.com/raw/" .. pasteId
+	local success, json = pcall(function()
+		return game:HttpGet(url)
+	end)
+	if success then
+		local ok, data = pcall(HttpService.JSONDecode, HttpService, json)
+		if ok then
+			print("Pastebinから復元成功！")
+			return data
+		end
+	end
+	return {}
+end
+
+local pasteId = nil
+if isfile and readfile and isfile(PASTE_ID_FILE) then
+	pasteId = readfile(PASTE_ID_FILE)
+end
+
+local savedData = loadFromPastebin(pasteId)
+local savedMacros = savedData.savedMacros or {}
+getgenv().AntiAFK = savedData.antiAFK == true
+
+local function autoSave()
+	local data = {
+		savedMacros = savedMacros,
+		antiAFK = getgenv().AntiAFK,
+	}
+	local newId = saveToPastebin(data)
+	if newId and writefile then
+		writefile(PASTE_ID_FILE, newId)
+	end
+end
 
 local function createProfileLabel(name, value)
 	local frame = Instance.new("Frame")
@@ -1029,69 +1105,14 @@ local function createMacroCraft(editIndex)
 				end
 				runMacro(mData)
 			end)
+			
 		end
-
-		frame.Visible = false
+		autoSave()
+		frame:Destroy()
 	end)
 	updateList()
 	return frame
 end
-
-local function getDeviceHWID()
-	-- Delta Executor
-	if gethwid then
-		return gethwid()
-	end
-	-- Synapse X
-	if syn and syn.get_hwid then
-		return syn.get_hwid()
-	end
-	-- Krnl
-	if krnl and krnl.gethwid then
-		return krnl.gethwid()
-	end
-	-- Fluxus / Comet / その他
-	if typeof(gethwid) == "function" then
-		return gethwid()
-	end
-
-	return "unknown_device"
-end
-
-local DEVICE_HWID = getDeviceHWID()
-local SETTINGS_FILE = "macro_settings_" .. DEVICE_HWID .. ".json"
-
-local function saveSettings(data)
-	if not writefile then
-		warn("writefile が利用できません")
-		return
-	end
-	local json = HttpService:JSONEncode(data)
-	writefile(SETTINGS_FILE, json)
-	print("設定を保存 →", SETTINGS_FILE)
-end
-
-local function loadSettings()
-	if not isfile or not readfile then
-		warn("isfile/readfile が利用できません")
-		return {}
-	end
-	if isfile(SETTINGS_FILE) then
-		local json = readfile(SETTINGS_FILE)
-		local ok, data = pcall(HttpService.JSONDecode, HttpService, json)
-		if ok then
-			print("設定を復元 ←", SETTINGS_FILE)
-			return data
-		else
-			warn("JSON パース失敗 → 削除")
-			delfile(SETTINGS_FILE)
-		end
-	end
-	return {}
-end
-
-local savedData = loadSettings()
-local savedMacros = savedData.savedMacros or {}
 
 addBtn.MouseButton1Click:Connect(function()
 	table.insert(editorFrames,createMacroCraft())
