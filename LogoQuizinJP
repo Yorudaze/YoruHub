@@ -1,0 +1,98 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+local folder = workspace:WaitForChild("clearpart")
+
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 230, 0, 100)
+frame.Position = UDim2.new(0.3, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, -40, 0, 30)
+title.Position = UDim2.new(0, 10, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "Auto ON"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.new(1,1,1)
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+task.spawn(function()
+	while title do
+		for i = 0, 1, 0.01 do
+			title.TextColor3 = Color3.fromHSV(i, 1, 1)
+			task.wait(0.03)
+		end
+	end
+end)
+
+local ownerLabel = Instance.new("TextLabel", frame)
+ownerLabel.Size = UDim2.new(0, 80, 0, 20)
+ownerLabel.Position = UDim2.new(1, -115, 0, 11)
+ownerLabel.BackgroundTransparency = 1
+ownerLabel.Text = "owner hub"
+ownerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+ownerLabel.TextTransparency = 0.3
+ownerLabel.TextSize = 14
+ownerLabel.Font = Enum.Font.GothamSemibold
+ownerLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+local close = Instance.new("TextButton", frame)
+close.Size = UDim2.new(0, 25, 0, 25)
+close.Position = UDim2.new(1, -30, 0, 5)
+close.Text = "×"
+close.TextColor3 = Color3.fromRGB(255, 100, 100)
+close.BackgroundTransparency = 1
+close.TextSize = 20
+close.Font = Enum.Font.GothamBold
+
+local switch = Instance.new("TextButton", frame)
+switch.Size = UDim2.new(0.9, 0, 0, 40)
+switch.Position = UDim2.new(0.05, 0, 0, 45)
+switch.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+switch.TextColor3 = Color3.fromRGB(255, 255, 255)
+switch.Text = "OFF"
+switch.Font = Enum.Font.GothamBold
+switch.TextSize = 18
+Instance.new("UICorner", switch).CornerRadius = UDim.new(0, 6)
+
+local Auto = false
+switch.MouseButton1Click:Connect(function()
+	Auto = not Auto
+	if Auto then
+		switch.Text = "Auto ON"
+		switch.BackgroundColor3 = Color3.fromRGB(0, 85, 255)
+	else
+		switch.Text = "Auto OFF"
+		switch.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	end
+end)
+
+close.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
+
+local function touchPart(part)
+	if not part or not part:IsA("BasePart") then return end
+	firetouchinterest(hrp, part, 0)
+	task.wait(0.02)
+	firetouchinterest(hrp, part, 1)
+end
+task.spawn(function()
+	while task.wait(0.05) do
+		if Auto then
+			for _, part in ipairs(folder:GetChildren()) do
+				touchPart(part)
+			end
+		end
+	end
+end)
