@@ -5,6 +5,35 @@ local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
+local MACRO_FILE = "BloxFruits/Macros.json"
+
+local function loadMacros()
+	local success, data = pcall(function()
+		if isfile and isfile(MACRO_FILE) then
+			return HttpService:JSONDecode(readfile(MACRO_FILE))
+		end
+	end)
+
+	if success and data and type(data) == "table" then
+		savedMacros = data
+
+		for _, mData in ipairs(savedMacros) do
+			local macroFrame = createMacroFrame(mData)
+			macroFrame.Parent = savedList
+		end
+	end
+end
+
+local function saveMacros()
+	pcall(function()
+		if writefile then
+			writefile(MACRO_FILE, HttpService:JSONEncode(savedMacros))
+		end
+	end)
+end
+
+game:BindToClose(saveMacros)
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "KeyAutoPressGUI"
 gui.ResetOnSpawn = false
@@ -264,100 +293,6 @@ local function formatTime(seconds)
 	local minutes = math.floor((seconds % 3600) / 60)
 	local secs = seconds % 60
 	return string.format("%02d:%02d:%02d", hours, minutes, secs)
-end
-
-local PASTEBIN_DEV_KEY = "16ezoLoQR8Ju9KIG5sQXZqc_2g2U2L_e"  -- あなたのAPIキー
-local PASTE_ID_FILE = "macro_paste_id.txt"  -- PCでも一時保存（次回高速ロード用）
-
--- ==============================
--- 3. HWID取得（Delta PC/iPad 対応）
--- ==============================
-local function getDeviceHWID()
-	if gethwid then
-		local hwid = gethwid()
-		if hwid and hwid ~= "" then return hwid end
-	end
-	if syn and syn.get_hwid then return syn.get_hwid() end
-	if krnl and krnl.gethwid then return krnl.gethwid() end
-	if typeof(gethwid) == "function" then return gethwid() end
-
-	local ok, id = pcall(function()
-		return game:GetService("RbxAnalyticsService"):GetClientId()
-	end)
-	return ok and id:gsub("-", "") or "unknown"
-end
-
-local DEVICE_HWID = getDeviceHWID()
-
-local function saveToPastebin(data)
-	if not HttpService.HttpEnabled then
-		warn("HttpService が無効です")
-		return false
-	end
-
-	local json = HttpService:JSONEncode(data)
-	local url = "https://pastebin.com/api/api_post.php"
-	local body = {
-		api_dev_key = PASTEBIN_DEV_KEY,
-		api_option = "paste",
-		api_paste_code = json,
-		api_paste_private = "1",
-		api_paste_name = "Roblox_Macro_" .. DEVICE_HWID,
-		api_paste_expire_date = "N"
-	}
-
-	local success, response = pcall(function()
-		return HttpService:PostAsync(url, HttpService:UrlEncode(body), Enum.HttpContentType.ApplicationUrlEncoded)
-	end)
-
-	if success and response:find("pastebin.com/") then
-		local pasteId = response:match("pastebin%.com/(%w+)")
-
-		if writefile then
-			writefile(PASTE_ID_FILE, pasteId)
-		end
-		print("Pastebin保存成功！ ID:", pasteId)
-		return pasteId
-	else
-		warn("Pastebin保存失敗:", response)
-		return false
-	end
-end
-
-local function loadFromPastebin(pasteId)
-	if not pasteId then return {} end
-	local url = "https://pastebin.com/raw/" .. pasteId
-	local success, json = pcall(function()
-		return game:HttpGet(url)
-	end)
-	if success then
-		local ok, data = pcall(HttpService.JSONDecode, HttpService, json)
-		if ok then
-			print("Pastebinから復元成功！")
-			return data
-		end
-	end
-	return {}
-end
-
-local pasteId = nil
-if isfile and readfile and isfile(PASTE_ID_FILE) then
-	pasteId = readfile(PASTE_ID_FILE)
-end
-
-local savedData = loadFromPastebin(pasteId)
-local savedMacros = savedData.savedMacros or {}
-getgenv().AntiAFK = savedData.antiAFK == true
-
-local function autoSave()
-	local data = {
-		savedMacros = savedMacros,
-		antiAFK = getgenv().AntiAFK,
-	}
-	local newId = saveToPastebin(data)
-	if newId and writefile then
-		writefile(PASTE_ID_FILE, newId)
-	end
 end
 
 local function createProfileLabel(name, value)
@@ -971,6 +906,7 @@ local function createMacroCraft(editIndex)
 			deleteBtn.MouseButton1Click:Connect(function()
 				table.remove(savedMacros, i)
 				macroFrame:Destroy()
+				saveMacros()
 			end)
 
 			local editBtn = Instance.new("TextButton")
@@ -1107,7 +1043,7 @@ local function createMacroCraft(editIndex)
 			end)
 			
 		end
-		autoSave()
+		saveMacros()
 		frame:Destroy()
 	end)
 	updateList()
@@ -1117,3 +1053,5 @@ end
 addBtn.MouseButton1Click:Connect(function()
 	table.insert(editorFrames,createMacroCraft())
 end)
+
+loadMacros()
