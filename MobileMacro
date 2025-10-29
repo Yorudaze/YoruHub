@@ -261,28 +261,6 @@ end
 makeDraggable(frame2)
 makeDraggable(toggleButton)
 
-local function loadMacros()
-	local success, data = pcall(function()
-		if isfile and isfile(MACRO_FILE) then
-			return HttpService:JSONDecode(readfile(MACRO_FILE))
-		end
-	end)
-
-	if success and data and type(data) == "table" then
-		savedMacros = data
-
-		for _, child in ipairs(savedList:GetChildren()) do
-			if child:IsA("Frame") then
-				child:Destroy()
-			end
-		end
-
-		for i, mData in ipairs(savedMacros) do
-			createMacroFrame(mData, i)
-		end
-	end
-end
-
 local function saveMacros()
 	pcall(function()
 		if writefile then
@@ -290,8 +268,6 @@ local function saveMacros()
 		end
 	end)
 end
-
--- ==================== 正しい createMacroFrame 関数 ====================
 
 local function createMacroFrame(mData, index)
 	local macroFrame = Instance.new("Frame")
@@ -349,12 +325,11 @@ local function createMacroFrame(mData, index)
 	Instance.new("UICorner", playBtn).CornerRadius = UDim.new(1, 0)
 	playBtn.Parent = macroFrame
 
-	-- 削除
 	deleteBtn.MouseButton1Click:Connect(function()
 		table.remove(savedMacros, index)
 		macroFrame:Destroy()
 		saveMacros()
-		-- リスト再描画
+
 		for _, child in ipairs(savedList:GetChildren()) do
 			if child:IsA("Frame") then child:Destroy() end
 		end
@@ -1059,5 +1034,27 @@ end
 addBtn.MouseButton1Click:Connect(function()
 	table.insert(editorFrames,createMacroCraft())
 end)
+
+local function loadMacros()
+	local success, data = pcall(function()
+		if isfile and isfile(MACRO_FILE) then
+			return HttpService:JSONDecode(readfile(MACRO_FILE))
+		end
+	end)
+
+	if success and data and type(data) == "table" then
+		savedMacros = data
+
+		for _, child in ipairs(savedList:GetChildren()) do
+			if child:IsA("Frame") then
+				child:Destroy()
+			end
+		end
+
+		for i, mData in ipairs(savedMacros) do
+			createMacroFrame(mData, i)
+		end
+	end
+end
 
 loadMacros()
