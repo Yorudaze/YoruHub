@@ -993,7 +993,7 @@ local function createMacroCraft(editIndex)
 												task.wait(v.value)
 											end
 											if not hasWait then
-												task.wait(0.02)
+												task.wait(0.01)
 											end
 										end
 									end
