@@ -338,9 +338,9 @@ local function createMacroFrame(mData, index)
 		end
 	end)
 
-	-- 編集
+	
 	editBtn.MouseButton1Click:Connect(function()
-		table.insert(editorFrames, createMacroCraft(index))
+		createMacroCraft(index)
 	end)
 
 	-- 実行
