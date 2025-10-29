@@ -32,8 +32,6 @@ local function saveMacros()
 	end)
 end
 
-game:BindToClose(saveMacros)
-
 local gui = Instance.new("ScreenGui")
 gui.Name = "KeyAutoPressGUI"
 gui.ResetOnSpawn = false
