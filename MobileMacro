@@ -1050,7 +1050,183 @@ local function loadMacros()
 		end
 
 		for i, mData in ipairs(savedMacros) do
-			createMacroFrame(mData, i)
+			for _, child in ipairs(savedList:GetChildren()) do
+				if child:IsA("Frame") then
+					child:Destroy()
+				end
+			end
+
+			for i, mData in ipairs(savedMacros) do
+				local macroFrame = Instance.new("Frame")
+				macroFrame.BackgroundColor3 = Color3.fromRGB(86, 86, 97)
+				macroFrame.ZIndex = 13
+				macroFrame.Parent = savedList
+				Instance.new("UICorner", macroFrame).CornerRadius = UDim.new(0, 8)
+
+				local titleLabel = Instance.new("TextLabel")
+				titleLabel.Size = UDim2.new(0.6, 0, 0.3, 0)
+				titleLabel.Position = UDim2.new(0, 10, 0, 0)
+				titleLabel.BackgroundTransparency = 1
+				titleLabel.Text = mData.title
+				titleLabel.Font = Enum.Font.GothamBold
+				titleLabel.TextSize = 18
+				titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+				titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+				titleLabel.ZIndex = 14
+				titleLabel.Parent = macroFrame
+
+				local deleteBtn = Instance.new("TextButton")
+				deleteBtn.Size = UDim2.new(0, 20, 0, 20)
+				deleteBtn.Position = UDim2.new(0.83, 0, 0.05, 0)
+				deleteBtn.Text = "×"
+				deleteBtn.Font = Enum.Font.GothamBold
+				deleteBtn.TextSize = 20
+				deleteBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+				deleteBtn.TextColor3 = Color3.new(1, 1, 1)
+				deleteBtn.ZIndex = 14
+				Instance.new("UICorner", deleteBtn).CornerRadius = UDim.new(1, 0)
+				deleteBtn.Parent = macroFrame
+
+				deleteBtn.MouseButton1Click:Connect(function()
+					table.remove(savedMacros, i)
+					macroFrame:Destroy()
+					saveMacros()
+				end)
+
+				local editBtn = Instance.new("TextButton")
+				editBtn.Size = UDim2.new(0.3, 0, 0.2, 0)
+				editBtn.Position = UDim2.new(0.35, 0, 0.75, 0)
+				editBtn.Text = "Edit"
+				editBtn.Font = Enum.Font.GothamBold
+				editBtn.TextSize = 18
+				editBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+				editBtn.TextColor3 = Color3.new(1, 1, 1)
+				editBtn.ZIndex = 14
+				Instance.new("UICorner", editBtn).CornerRadius = UDim.new(1, 0)
+				editBtn.Parent = macroFrame
+
+				editBtn.MouseButton1Click:Connect(function()
+					createMacroCraft(i)
+				end)
+
+				local playBtn = Instance.new("TextButton")
+				playBtn.Size = UDim2.new(0.3, 0, 0.2, 0)
+				playBtn.Position = UDim2.new(0.65, 0, 0.75, 0)
+				playBtn.Text = "Run"
+				playBtn.Font = Enum.Font.GothamBold
+				playBtn.TextSize = 18
+				playBtn.BackgroundColor3 = Color3.fromRGB(118, 185, 0)
+				playBtn.TextColor3 = Color3.new(1, 1, 1)
+				playBtn.ZIndex = 14
+				Instance.new("UICorner", playBtn).CornerRadius = UDim.new(1, 0)
+				playBtn.Parent = macroFrame
+
+				playBtn.MouseButton1Click:Connect(function()
+					local function runMacro(data)
+						local switchGui = Instance.new("ScreenGui", player.PlayerGui)
+						switchGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+						local btn = Instance.new("TextButton")
+						btn.Size = UDim2.new(0, 200, 0, 70)
+						btn.Position = UDim2.new(0.5, -100, 0.9, 0)
+						btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+						btn.Text = data.title .. "\n[OFF]"
+						btn.Font = Enum.Font.GothamBold
+						btn.TextSize = 20
+						btn.TextColor3 = Color3.new(1, 1, 1)
+						btn.ZIndex = 30
+						Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+						btn.Parent = switchGui
+
+						local close = Instance.new("TextButton")
+						close.Size = UDim2.new(0, 25, 0, 25)
+						close.Position = UDim2.new(1, -30, 0, 5)
+						close.Text = "×"
+						close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+						close.TextColor3 = Color3.new(1, 1, 1)
+						close.ZIndex = 31
+						Instance.new("UICorner", close).CornerRadius = UDim.new(0, 5)
+						close.Parent = btn
+						close.MouseButton1Click:Connect(function() switchGui:Destroy() end)
+
+						makeDraggable(btn)
+
+						local hasWait = false
+						for _, v in ipairs(data.sequence) do
+							if v.type == "wait" then
+								hasWait = true
+								break
+							end
+						end
+
+						if data.mode == "toggle" then
+							local active = false
+							btn.MouseButton1Click:Connect(function()
+								active = not active
+								btn.Text = data.title .. (active and "\n[ON]" or "\n[OFF]")
+								btn.BackgroundColor3 = active and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(60, 60, 70)
+								if active then
+									task.spawn(function()
+										while active do
+											for _, v in ipairs(data.sequence) do
+												if not active then break end
+												if v.type == "keydown" then
+													VirtualInputManager:SendKeyEvent(true, v.value, false, game)
+												elseif v.type == "keyup" then
+													VirtualInputManager:SendKeyEvent(false, v.value, false, game)
+												elseif v.type == "wait" then
+													task.wait(v.value)
+												end
+												if not hasWait then
+													task.wait(0.02)
+												end
+											end
+										end
+									end)
+								end
+							end)
+						else
+							local isHolding = false
+							local holdThread
+
+							btn.MouseButton1Down:Connect(function()
+								if isHolding then return end
+								isHolding = true
+
+								btn.Text = data.title .. "\n[ON]"
+								btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+
+								task.spawn(function()
+									while isHolding do
+										for _, v in ipairs(data.sequence) do
+											if not isHolding then break end 
+
+											if v.type == "keydown" then
+												VirtualInputManager:SendKeyEvent(true, v.value, false, game)
+											elseif v.type == "keyup" then
+												VirtualInputManager:SendKeyEvent(false, v.value, false, game)
+											elseif v.type == "wait" then
+												task.wait(v.value)
+											end
+
+											if not hasWait then
+												task.wait(0.02)
+											end
+										end
+									end
+								end)
+							end)
+
+							btn.MouseButton1Up:Connect(function()
+								isHolding = false
+								btn.Text = data.title .. "\n[OFF]"
+								btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+							end)
+						end
+					end
+					runMacro(mData)
+				end)
+
+			end
 		end
 	end
 end
