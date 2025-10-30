@@ -20,32 +20,32 @@ local playerJoinTime = os.time()
 local MACRO_FILE = "BloxFruits/Macros.json"
 
 local function saveMacros()
-	pcall(function()
-		if writefile then
-			local saveData = {}
-			for _, m in ipairs(savedMacros) do
-				local seq = {}
-				for _, item in ipairs(m.sequence) do
-					local saveValue
-					if item.type == "wait" then
-						saveValue = item.value
-					else
-						saveValue = item.value.Name
-					end
-					table.insert(seq, {
-						type = item.type,
-						value = saveValue
-					})
-				end
-				table.insert(saveData, {
-					title = m.title,
-					sequence = seq,
-					mode = m.mode
-				})
-			end
-			writefile(MACRO_FILE, HttpService:JSONEncode(saveData))
-		end
-	end)
+    pcall(function()
+        if writefile then
+            local saveData = {}
+            for _, m in ipairs(savedMacros) do
+                local seq = {}
+                for _, item in ipairs(m.sequence) do
+                    local saveValue
+                    if item.type == "wait" then
+                        saveValue = item.value
+                    else
+                        saveValue = item.value.Name 
+                    end
+                    table.insert(seq, {
+                        type = item.type,
+                        value = saveValue
+                    })
+                end
+                table.insert(saveData, {
+                    title = m.title,
+                    sequence = seq,
+                    mode = m.mode
+                })
+            end
+            writefile(MACRO_FILE, HttpService:JSONEncode(saveData))
+        end
+    end)
 end
 
 local frame2 = Instance.new("Frame")
@@ -217,9 +217,9 @@ gridLayout.CellSize = UDim2.new(0.4, 0, 0.4, 0)
 gridLayout.CellPadding = UDim2.new(0, 10, 0, 10)
 gridLayout.FillDirection = Enum.FillDirection.Horizontal
 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
---[[gridLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+gridLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	savedList.CanvasSize = UDim2.new(0, gridLayout.AbsoluteContentSize.X, 0, gridLayout.AbsoluteContentSize.Y + 10)
-end)]]
+end)
 gridLayout.Parent = savedList
 
 local settingsList = Instance.new("Frame")
@@ -295,11 +295,6 @@ local function formatTime(seconds)
 	local minutes = math.floor((seconds % 3600) / 60)
 	local secs = seconds % 60
 	return string.format("%02d:%02d:%02d", hours, minutes, secs)
-end
-
-local function parseKeyCode(name)
-	if not name or name == "" then return nil end
-	return Enum.KeyCode[name]
 end
 
 local function createProfileLabel(name, value)
@@ -408,6 +403,108 @@ pcall(function()
 		end
 	end)
 end)
+
+local function runMacro(data)
+	local switchGui = Instance.new("ScreenGui", player.PlayerGui)
+	switchGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 200, 0, 70)
+	btn.Position = UDim2.new(0.5, -100, 0.9, 0)
+	btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+	btn.Text = data.title .. "\n[OFF]"
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 20
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.ZIndex = 30
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+	btn.Parent = switchGui
+
+	local close = Instance.new("TextButton")
+	close.Size = UDim2.new(0, 25, 0, 25)
+	close.Position = UDim2.new(1, -30, 0, 5)
+	close.Text = "×"
+	close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	close.TextColor3 = Color3.new(1, 1, 1)
+	close.ZIndex = 31
+	Instance.new("UICorner", close).CornerRadius = UDim.new(0, 5)
+	close.Parent = btn
+	close.MouseButton1Click:Connect(function() switchGui:Destroy() end)
+
+	makeDraggable(btn)
+
+	local hasWait = false
+	for _, v in ipairs(data.sequence) do
+		if v.type == "wait" then
+			hasWait = true
+			break
+		end
+	end
+
+	if data.mode == "toggle" then
+		local active = false
+		btn.MouseButton1Click:Connect(function()
+			active = not active
+			btn.Text = data.title .. (active and "\n[ON]" or "\n[OFF]")
+			btn.BackgroundColor3 = active and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(60, 60, 70)
+			if active then
+				task.spawn(function()
+					while active do
+						for _, v in ipairs(data.sequence) do
+							if not active then break end
+							if v.type == "keydown" then
+								VirtualInputManager:SendKeyEvent(true, v.value, false, game)
+							elseif v.type == "keyup" then
+								VirtualInputManager:SendKeyEvent(false, v.value, false, game)
+							elseif v.type == "wait" then
+								task.wait(v.value)
+							end
+							if not hasWait then
+								task.wait(0.02)
+							end
+						end
+					end
+				end)
+			end
+		end)
+	else
+		local isHolding = false
+		local holdThread
+
+		btn.MouseButton1Down:Connect(function()
+			if isHolding then return end
+			isHolding = true
+
+			btn.Text = data.title .. "\n[ON]"
+			btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+
+			task.spawn(function()
+				while isHolding do
+					for _, v in ipairs(data.sequence) do
+						if not isHolding then break end 
+
+						if v.type == "keydown" then
+							VirtualInputManager:SendKeyEvent(true, v.value, false, game)
+						elseif v.type == "keyup" then
+							VirtualInputManager:SendKeyEvent(false, v.value, false, game)
+						elseif v.type == "wait" then
+							task.wait(v.value)
+						end
+
+						if not hasWait then
+							task.wait(0.02)
+						end
+					end
+				end
+			end)
+		end)
+
+		btn.MouseButton1Up:Connect(function()
+			isHolding = false
+			btn.Text = data.title .. "\n[OFF]"
+			btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+		end)
+	end
+end
 
 local function createMacroCraft(editIndex)
 	local frame = Instance.new("Frame")
@@ -583,21 +680,11 @@ local function createMacroCraft(editIndex)
 	local itemDataMap = {}
 
 	if editIndex then
-		local raw = savedMacros[editIndex]
-		titleInput.Text = raw.title
-		selectedMode = raw.mode
+		local macroData = savedMacros[editIndex]
+		titleInput.Text = macroData.title
+		sequence = table.clone(macroData.sequence)
+		selectedMode = macroData.mode
 		updateModeButtons()
-
-		sequence = {}
-		for _, item in ipairs(raw.sequence) do
-			local value
-			if item.type == "wait" then
-				value = item.value
-			else
-				value = parseKeyCode(item.value.Name) 
-			end
-			table.insert(sequence, { type = item.type, value = value })
-		end
 	end
 
 	local function showWarning(message)
@@ -953,107 +1040,6 @@ local function createMacroCraft(editIndex)
 			playBtn.Parent = macroFrame
 
 			playBtn.MouseButton1Click:Connect(function()
-				local function runMacro(data)
-					local switchGui = Instance.new("ScreenGui", player.PlayerGui)
-					switchGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-					local btn = Instance.new("TextButton")
-					btn.Size = UDim2.new(0, 200, 0, 70)
-					btn.Position = UDim2.new(0.5, -100, 0.9, 0)
-					btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-					btn.Text = data.title .. "\n[OFF]"
-					btn.Font = Enum.Font.GothamBold
-					btn.TextSize = 20
-					btn.TextColor3 = Color3.new(1, 1, 1)
-					btn.ZIndex = 30
-					Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
-					btn.Parent = switchGui
-
-					local close = Instance.new("TextButton")
-					close.Size = UDim2.new(0, 25, 0, 25)
-					close.Position = UDim2.new(1, -30, 0, 5)
-					close.Text = "×"
-					close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-					close.TextColor3 = Color3.new(1, 1, 1)
-					close.ZIndex = 31
-					Instance.new("UICorner", close).CornerRadius = UDim.new(0, 5)
-					close.Parent = btn
-					close.MouseButton1Click:Connect(function() switchGui:Destroy() end)
-
-					makeDraggable(btn)
-
-					local hasWait = false
-					for _, v in ipairs(data.sequence) do
-						if v.type == "wait" then
-							hasWait = true
-							break
-						end
-					end
-
-					if data.mode == "toggle" then
-						local active = false
-						btn.MouseButton1Click:Connect(function()
-							active = not active
-							btn.Text = data.title .. (active and "\n[ON]" or "\n[OFF]")
-							btn.BackgroundColor3 = active and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(60, 60, 70)
-							if active then
-								task.spawn(function()
-									while active do
-										for _, v in ipairs(data.sequence) do
-											if not active then break end
-											if v.type == "keydown" then
-												VirtualInputManager:SendKeyEvent(true, v.value, false, game)
-											elseif v.type == "keyup" then
-												VirtualInputManager:SendKeyEvent(false, v.value, false, game)
-											elseif v.type == "wait" then
-												task.wait(v.value)
-											end
-											if not hasWait then
-												task.wait(0.01)
-											end
-										end
-									end
-								end)
-							end
-						end)
-					else
-						local isHolding = false
-						local holdThread
-
-						btn.MouseButton1Down:Connect(function()
-							if isHolding then return end
-							isHolding = true
-
-							btn.Text = data.title .. "\n[ON]"
-							btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-
-							task.spawn(function()
-								while isHolding do
-									for _, v in ipairs(data.sequence) do
-										if not isHolding then break end 
-
-										if v.type == "keydown" then
-											VirtualInputManager:SendKeyEvent(true, v.value, false, game)
-										elseif v.type == "keyup" then
-											VirtualInputManager:SendKeyEvent(false, v.value, false, game)
-										elseif v.type == "wait" then
-											task.wait(v.value)
-										end
-
-										if not hasWait then
-											task.wait(0.02)
-										end
-									end
-								end
-							end)
-						end)
-
-						btn.MouseButton1Up:Connect(function()
-							isHolding = false
-							btn.Text = data.title .. "\n[OFF]"
-							btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-						end)
-					end
-				end
 				runMacro(mData)
 			end)
 
@@ -1069,47 +1055,56 @@ addBtn.MouseButton1Click:Connect(function()
 	table.insert(editorFrames,createMacroCraft())
 end)
 
+local function parseKeyCode(name)
+    if not name or name == "" then return nil end
+    return Enum.KeyCode[name]
+end
+
 local function loadMacros()
 	local success, rawData = pcall(function()
-		if isfile and isfile(MACRO_FILE) then
-			return HttpService:JSONDecode(readfile(MACRO_FILE))
-		end
-	end)
+        if isfile and isfile(MACRO_FILE) then
+            return HttpService:JSONDecode(readfile(MACRO_FILE))
+        end
+    end)
 
-	if not (success and rawData and type(rawData) == "table") then
-		return
-	end
+    if not (success and rawData and type(rawData) == "table") then
+        return
+    end
 
-	for _, raw in ipairs(rawData) do
-		local seq = {}
-		for _, item in ipairs(raw.sequence or {}) do
-			local value
-			if item.type == "wait" then
-				value = item.value
-			else
-				value = parseKeyCode(item.value)
-				if not value then
-					warn("無効なキー: " .. tostring(item.value))
-				end
-			end
-			if value or item.type == "wait" then
-				table.insert(seq, { type = item.type, value = value })
-			end
-		end
+    savedMacros = {} 
 
-		table.insert(savedMacros, {
-			title = raw.title or "Untitled",
-			sequence = seq,
-			mode = raw.mode or "hold"
-		})
-	end
+    for _, raw in ipairs(rawData) do
+        local seq = {}
+        for _, item in ipairs(raw.sequence or {}) do
+            local value
+            if item.type == "wait" then
+                value = item.value 
+            else
+                value = Enum.KeyCode[item.value] 
+                if not value then
+                    warn("無効なキー: " .. item.value)
+                end
+            end
+            if value or item.type == "wait" then
+                table.insert(seq, { type = item.type, value = value })
+            end
+        end
+
+        table.insert(savedMacros, {
+            title = raw.title or "Untitled",
+            sequence = seq,
+            mode = raw.mode or "hold"
+        })
+    end
 
 	for _, child in ipairs(savedList:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
 		end
 	end
+
 	for i, mData in ipairs(savedMacros) do
+
 		local macroFrame = Instance.new("Frame")
 		macroFrame.BackgroundColor3 = Color3.fromRGB(86, 86, 97)
 		macroFrame.ZIndex = 13
@@ -1175,107 +1170,6 @@ local function loadMacros()
 		playBtn.Parent = macroFrame
 
 		playBtn.MouseButton1Click:Connect(function()
-			local function runMacro(data)
-				local switchGui = Instance.new("ScreenGui", player.PlayerGui)
-				switchGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-				local btn = Instance.new("TextButton")
-				btn.Size = UDim2.new(0, 200, 0, 70)
-				btn.Position = UDim2.new(0.5, -100, 0.9, 0)
-				btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-				btn.Text = data.title .. "\n[OFF]"
-				btn.Font = Enum.Font.GothamBold
-				btn.TextSize = 20
-				btn.TextColor3 = Color3.new(1, 1, 1)
-				btn.ZIndex = 30
-				Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
-				btn.Parent = switchGui
-
-				local close = Instance.new("TextButton")
-				close.Size = UDim2.new(0, 25, 0, 25)
-				close.Position = UDim2.new(1, -30, 0, 5)
-				close.Text = "×"
-				close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-				close.TextColor3 = Color3.new(1, 1, 1)
-				close.ZIndex = 31
-				Instance.new("UICorner", close).CornerRadius = UDim.new(0, 5)
-				close.Parent = btn
-				close.MouseButton1Click:Connect(function() switchGui:Destroy() end)
-
-				makeDraggable(btn)
-
-				local hasWait = false
-				for _, v in ipairs(data.sequence) do
-					if v.type == "wait" then
-						hasWait = true
-						break
-					end
-				end
-
-				if data.mode == "toggle" then
-					local active = false
-					btn.MouseButton1Click:Connect(function()
-						active = not active
-						btn.Text = data.title .. (active and "\n[ON]" or "\n[OFF]")
-						btn.BackgroundColor3 = active and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(60, 60, 70)
-						if active then
-							task.spawn(function()
-								while active do
-									for _, v in ipairs(data.sequence) do
-										if not active then break end
-										if v.type == "keydown" then
-											VirtualInputManager:SendKeyEvent(true, v.value, false, game)
-										elseif v.type == "keyup" then
-											VirtualInputManager:SendKeyEvent(false, v.value, false, game)
-										elseif v.type == "wait" then
-											task.wait(v.value)
-										end
-										if not hasWait then
-											task.wait(0.02)
-										end
-									end
-								end
-							end)
-						end
-					end)
-				else
-					local isHolding = false
-					local holdThread
-
-					btn.MouseButton1Down:Connect(function()
-						if isHolding then return end
-						isHolding = true
-
-						btn.Text = data.title .. "\n[ON]"
-						btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-
-						task.spawn(function()
-							while isHolding do
-								for _, v in ipairs(data.sequence) do
-									if not isHolding then break end 
-
-									if v.type == "keydown" then
-										VirtualInputManager:SendKeyEvent(true, v.value, false, game)
-									elseif v.type == "keyup" then
-										VirtualInputManager:SendKeyEvent(false, v.value, false, game)
-									elseif v.type == "wait" then
-										task.wait(v.value)
-									end
-
-									if not hasWait then
-										task.wait(0.01)
-									end
-								end
-							end
-						end)
-					end)
-
-					btn.MouseButton1Up:Connect(function()
-						isHolding = false
-						btn.Text = data.title .. "\n[OFF]"
-						btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-					end)
-				end
-			end
 			runMacro(mData)
 		end)
 	end
