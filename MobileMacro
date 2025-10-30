@@ -27,9 +27,11 @@ local function saveMacros()
                 local seq = {}
                 for _, item in ipairs(m.sequence) do
                     local saveValue
-                    if item.type == "wait" then
+					if item.type == "wait" then
+						print(item.value)
                         saveValue = item.value
-                    else
+					else
+						print(item.value.Name)
                         saveValue = item.value.Name 
                     end
                     table.insert(seq, {
@@ -1062,13 +1064,15 @@ end
 
 local function loadMacros()
 	local success, rawData = pcall(function()
-        if isfile and isfile(MACRO_FILE) then
+		if isfile and isfile(MACRO_FILE) then
+			print("a")
             return HttpService:JSONDecode(readfile(MACRO_FILE))
         end
     end)
 
     if not (success and rawData and type(rawData) == "table") then
-        return
+		print("return1")
+		return
     end
 
     savedMacros = {} 
